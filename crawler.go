@@ -1,69 +1,32 @@
 package main
 
 import (
-	"encoding/csv"
+	"PiSec-Crawler/phishstats"
+	"encoding/json"
 	"fmt"
-	"net/http"
 )
 
-type ps_data struct {
-	date  string `json:"date"` //Last date of visualization
-	url   string `json:"url"`
-	ip    string `json:"ip"`
-	score string `json:"score"`
-}
-
-func readCSVFromUrl(url string) ([][]string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	reader := csv.NewReader(resp.Body)
-	reader.FieldsPerRecord = -1
-	reader.Comma = ','
-	data, err := reader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
 func main() {
-	url := "https://phishstats.info/phish_score.csv"
-	data, err := readCSVFromUrl(url)
+
+	stringData, dataErr := phishstats.ReadData()
+	if dataErr != nil {
+		panic(dataErr)
+	}
+
+	_, data, err := phishstats.ExtractCsvData(stringData)
+
 	if err != nil {
 		panic(err)
 	}
 
-	index := 0
-	treatList := []ps_data{}
-
-	for _, row := range data {
-
-		// skip header
-		if row[0][0] == '#' {
-			continue
+	psData := phishstats.ParseCsvData(data)
+	for _, ps := range psData {
+		jsonPs, err := json.Marshal(ps)
+		if err != nil {
+			fmt.Printf("Error: %s", err)
+			return
 		}
-
-		treat := ps_data{
-			date:  row[0],
-			score: row[1],
-			url:   row[2],
-			ip:    row[3],
-		}
-		treatList = append(treatList, treat)
-
-		index++
-
+		fmt.Println(string(jsonPs))
 	}
-
-	fmt.Println("Readed ", index, " records")
-
-	// for _, treat := range treatList {
-	// 	fmt.Println(treat)
-	// }
 
 }
