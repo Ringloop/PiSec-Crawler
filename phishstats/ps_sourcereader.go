@@ -1,6 +1,7 @@
 package phishstats
 
 import (
+	"PiSec-Crawler/source"
 	"encoding/csv"
 	"io"
 	"strings"
@@ -75,4 +76,12 @@ func ParseCsvData(data string) []PsSourceData {
 
 	return psData
 
+}
+
+func GetIndicatorFromData(data PsSourceData) source.Indicator {
+	return source.Indicator{
+		Url:         data.Url,
+		Reliability: int(data.Score * 10),
+		Ip:          data.IpAddress,
+	}
 }

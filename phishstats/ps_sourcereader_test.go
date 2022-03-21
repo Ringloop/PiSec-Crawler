@@ -97,3 +97,24 @@ func TestParseCsvValues(t *testing.T) {
 	require.Equal(t, psData[0].IpAddress, referenceIP)
 
 }
+
+func TestGetIndicatorFromData(t *testing.T) {
+	csvString := `# CSV: Date,Score,URL,IP
+	"2022-03-03 13:38:33","1.4","www.my-ip.com","131.223.43.4"`
+
+	_, data, err := ExtractCsvData(csvString)
+
+	require.Equal(t, err, nil)
+
+	psData := ParseCsvData(data)
+	indicator := GetIndicatorFromData(psData[0])
+
+	referenceScore := 14
+	referenceURL := "www.my-ip.com"
+	referenceIP := "131.223.43.4"
+
+	require.Equal(t, indicator.Reliability, referenceScore)
+	require.Equal(t, indicator.Url, referenceURL)
+	require.Equal(t, indicator.Ip, referenceIP)
+
+}

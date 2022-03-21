@@ -34,11 +34,7 @@ func main() {
 		bRequest := &source.UrlsBulkRequest{
 			Source: "PhishStats",
 			Indicators: []source.Indicator{
-				{
-					Url:         ps.Url,
-					Reliability: int(ps.Score * 10),
-					Ip:          ps.IpAddress,
-				},
+				phishstats.GetIndicatorFromData(ps),
 			},
 		}
 
