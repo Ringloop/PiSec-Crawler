@@ -29,6 +29,9 @@ const (
 	date_layout = "2006-01-02 15:04:05"
 )
 
+const BULKSIZE = 100
+const SOURCENAME = "PhishStats"
+
 // Convert the CSV string as internal date
 func (date *DateTime) UnmarshalCSV(csv string) (err error) {
 
@@ -75,7 +78,6 @@ func ParseCsvData(data string) []PsSourceData {
 	}
 
 	return psData
-
 }
 
 func GetIndicatorFromData(data PsSourceData) source.Indicator {
@@ -84,4 +86,27 @@ func GetIndicatorFromData(data PsSourceData) source.Indicator {
 		Reliability: int(data.Score * 10),
 		Ip:          data.IpAddress,
 	}
+}
+
+//build an array of bulkRequests containing batch of Indicators of the configured size
+func GetBulkRequests(sourceDataArray []PsSourceData) []source.UrlsBulkRequest {
+
+	var bulkData []source.UrlsBulkRequest
+	var indicators []source.Indicator
+
+	sourceDataRemaining := len(sourceDataArray)
+
+	for i, data := range sourceDataArray {
+		indicators = append(indicators, GetIndicatorFromData(data))
+		sourceDataRemaining--
+		if i+1%BULKSIZE == 0 || sourceDataRemaining == 0 {
+			bulkData = append(bulkData, source.UrlsBulkRequest{
+				Source:     SOURCENAME,
+				Indicators: indicators,
+			})
+		}
+	}
+
+	return bulkData
+
 }

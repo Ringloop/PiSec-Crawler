@@ -7,26 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseBasicCsv(t *testing.T) {
-	csvString := `# CSV: Date,Score,URL,IP
-"20220223","1.4","www.my-ip.com","131.223.43.4"`
+const singleCsvString = `# CSV: Date,Score,URL,IP
+"2022-03-03 13:38:33","1.4","www.my-ip.com","131.223.43.4"`
 
-	keys, data, err := ExtractCsvData(csvString)
-
-	require.Equal(t, err, nil)
-	require.Equal(t, len(keys), 4)
-	require.Equal(t, keys[0], "Date")
-	require.Equal(t, keys[1], "Score")
-	require.Equal(t, keys[2], "URL")
-	require.Equal(t, keys[3], "IP")
-
-	require.Equal(t, data, "Date, Score, URL, IP\n\"20220223\",\"1.4\",\"www.my-ip.com\",\"131.223.43.4\"")
-
-}
-
-func TestParseCsvTestString(t *testing.T) {
-
-	csvTestString := `######################################################################################
+const realCsvString = `######################################################################################
 # PhishScore | PhishStats                                                            #
 # Score ranges: 0-2 likely 2-4 suspicious 4-6 phishing 6-10 omg phishing!            #
 # Ranges may be adjusted without notice. List updated every 90 minutes. Do not crawl #
@@ -43,7 +27,26 @@ func TestParseCsvTestString(t *testing.T) {
 "2022-02-02 13:38:48","4.80","https://ww.interbak.prestamos.pe.zenoaks.com/","103.21.59.208"
 "2022-02-02 13:38:33","5.00","https://updateattonlineserver.weebly.com/","199.34.228.54"`
 
-	_, data, err := ExtractCsvData(csvTestString)
+func TestParseBasicCsv(t *testing.T) {
+	localCsvString := `# CSV: Date,Score,URL,IP
+"20220223","1.4","www.my-ip.com","131.223.43.4"`
+
+	keys, data, err := ExtractCsvData(localCsvString)
+
+	require.Equal(t, err, nil)
+	require.Equal(t, len(keys), 4)
+	require.Equal(t, keys[0], "Date")
+	require.Equal(t, keys[1], "Score")
+	require.Equal(t, keys[2], "URL")
+	require.Equal(t, keys[3], "IP")
+
+	require.Equal(t, data, "Date, Score, URL, IP\n\"20220223\",\"1.4\",\"www.my-ip.com\",\"131.223.43.4\"")
+
+}
+
+func TestParseCsvTestString(t *testing.T) {
+
+	_, data, err := ExtractCsvData(realCsvString)
 
 	require.Equal(t, err, nil)
 
@@ -99,10 +102,8 @@ func TestParseCsvValues(t *testing.T) {
 }
 
 func TestGetIndicatorFromData(t *testing.T) {
-	csvString := `# CSV: Date,Score,URL,IP
-	"2022-03-03 13:38:33","1.4","www.my-ip.com","131.223.43.4"`
 
-	_, data, err := ExtractCsvData(csvString)
+	_, data, err := ExtractCsvData(singleCsvString)
 
 	require.Equal(t, err, nil)
 
@@ -116,5 +117,49 @@ func TestGetIndicatorFromData(t *testing.T) {
 	require.Equal(t, indicator.Reliability, referenceScore)
 	require.Equal(t, indicator.Url, referenceURL)
 	require.Equal(t, indicator.Ip, referenceIP)
+
+}
+
+func TestGetSingleUrlBulkData(t *testing.T) {
+
+	_, data, err := ExtractCsvData(singleCsvString)
+
+	require.Equal(t, err, nil)
+
+	psData := ParseCsvData(data)
+	bulkData := GetBulkRequests(psData)
+
+	referenceScore := 14
+	referenceURL := "www.my-ip.com"
+	referenceIP := "131.223.43.4"
+
+	require.Equal(t, len(bulkData), 1)
+	require.Equal(t, len(bulkData[0].Indicators), 1)
+	require.Equal(t, bulkData[0].Source, "PhishStats")
+	require.Equal(t, bulkData[0].Indicators[0].Reliability, referenceScore)
+	require.Equal(t, bulkData[0].Indicators[0].Url, referenceURL)
+	require.Equal(t, bulkData[0].Indicators[0].Ip, referenceIP)
+
+}
+
+func TestGetMultipleUrlBulkData(t *testing.T) {
+
+	_, data, err := ExtractCsvData(realCsvString)
+
+	require.Equal(t, err, nil)
+
+	psData := ParseCsvData(data)
+	bulkData := GetBulkRequests(psData)
+
+	referenceScore := 14
+	referenceURL := "http://www.spirltswap.digital/"
+	referenceIP := "185.137.235.119"
+
+	require.Equal(t, len(bulkData), 1)
+	require.Equal(t, len(bulkData[0].Indicators), 7)
+	require.Equal(t, bulkData[0].Source, "PhishStats")
+	require.Equal(t, bulkData[0].Indicators[0].Reliability, referenceScore)
+	require.Equal(t, bulkData[0].Indicators[0].Url, referenceURL)
+	require.Equal(t, bulkData[0].Indicators[0].Ip, referenceIP)
 
 }
