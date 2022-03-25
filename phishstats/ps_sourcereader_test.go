@@ -1,16 +1,28 @@
 package phishstats
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-const singleCsvString = `# CSV: Date,Score,URL,IP
+const (
+	phishStatsPrefix = `######################################################################################
+# PhishScore | PhishStats                                                            #
+# Score ranges: 0-2 likely 2-4 suspicious 4-6 phishing 6-10 omg phishing!            #
+# Ranges may be adjusted without notice. List updated every 90 minutes. Do not crawl #
+# too much at the risk of being blocked.                                             #
+# Many Phishing websites are legitimate websites that have been hacked, so keep that #
+# in mind before blocking everything. Feed is provided as is, without any warrant.   #
+# CSV: Date,Score,URL,IP                                                             #
+######################################################################################`
+
+	singleCsvString = `# CSV: Date,Score,URL,IP
 "2022-03-03 13:38:33","1.4","www.my-ip.com","131.223.43.4"`
 
-const realCsvString = `######################################################################################
+	realCsvString = `######################################################################################
 # PhishScore | PhishStats                                                            #
 # Score ranges: 0-2 likely 2-4 suspicious 4-6 phishing 6-10 omg phishing!            #
 # Ranges may be adjusted without notice. List updated every 90 minutes. Do not crawl #
@@ -26,6 +38,16 @@ const realCsvString = `#########################################################
 "2022-02-02 13:38:49","6.20","https://www.bankmillenium-pl.com/login.php","104.21.8.72"
 "2022-02-02 13:38:48","4.80","https://ww.interbak.prestamos.pe.zenoaks.com/","103.21.59.208"
 "2022-02-02 13:38:33","5.00","https://updateattonlineserver.weebly.com/","199.34.228.54"`
+)
+
+func TestReadData(t *testing.T) {
+
+	res, error := ReadData()
+	require.Nil(t, error)
+	require.NotNil(t, res)
+	require.True(t, strings.HasPrefix(res, phishStatsPrefix))
+
+}
 
 func TestParseBasicCsv(t *testing.T) {
 	localCsvString := `# CSV: Date,Score,URL,IP
@@ -127,7 +149,7 @@ func TestGetSingleUrlBulkData(t *testing.T) {
 	require.Equal(t, err, nil)
 
 	psData := ParseCsvData(data)
-	bulkData := GetBulkRequests(psData)
+	bulkData := GetBulkRequestsFromData(psData)
 
 	referenceScore := 14
 	referenceURL := "www.my-ip.com"
@@ -149,7 +171,7 @@ func TestGetMultipleUrlBulkData(t *testing.T) {
 	require.Equal(t, err, nil)
 
 	psData := ParseCsvData(data)
-	bulkData := GetBulkRequests(psData)
+	bulkData := GetBulkRequestsFromData(psData)
 
 	referenceScore := 14
 	referenceURL := "http://www.spirltswap.digital/"

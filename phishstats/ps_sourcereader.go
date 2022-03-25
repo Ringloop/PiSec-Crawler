@@ -3,7 +3,9 @@ package phishstats
 import (
 	"PiSec-Crawler/source"
 	"encoding/csv"
+	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -27,10 +29,30 @@ type PsSourceData struct {
 
 const (
 	date_layout = "2006-01-02 15:04:05"
+	url         = "https://phishstats.info/phish_score.csv"
+	BULKSIZE    = 100
+	SOURCENAME  = "PhishStats"
 )
 
-const BULKSIZE = 100
-const SOURCENAME = "PhishStats"
+func ReadData() (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		bodyString := string(bodyBytes)
+		return bodyString, nil
+	}
+
+	return "", fmt.Errorf("unexpected HTTP status: %d", resp.StatusCode)
+}
 
 // Convert the CSV string as internal date
 func (date *DateTime) UnmarshalCSV(csv string) (err error) {
@@ -89,7 +111,7 @@ func GetIndicatorFromData(data PsSourceData) source.Indicator {
 }
 
 //build an array of bulkRequests containing batch of Indicators of the configured size
-func GetBulkRequests(sourceDataArray []PsSourceData) []source.UrlsBulkRequest {
+func GetBulkRequestsFromData(sourceDataArray []PsSourceData) []source.UrlsBulkRequest {
 
 	var bulkData []source.UrlsBulkRequest
 	var indicators []source.Indicator
@@ -99,11 +121,12 @@ func GetBulkRequests(sourceDataArray []PsSourceData) []source.UrlsBulkRequest {
 	for i, data := range sourceDataArray {
 		indicators = append(indicators, GetIndicatorFromData(data))
 		sourceDataRemaining--
-		if i+1%BULKSIZE == 0 || sourceDataRemaining == 0 {
+		if (i+1)%BULKSIZE == 0 || sourceDataRemaining == 0 {
 			bulkData = append(bulkData, source.UrlsBulkRequest{
 				Source:     SOURCENAME,
 				Indicators: indicators,
 			})
+			indicators = nil
 		}
 	}
 

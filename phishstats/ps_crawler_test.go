@@ -1,27 +1,48 @@
 package phishstats
 
 import (
-	"strings"
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-const phishStatsPrefix = `######################################################################################
-# PhishScore | PhishStats                                                            #
-# Score ranges: 0-2 likely 2-4 suspicious 4-6 phishing 6-10 omg phishing!            #
-# Ranges may be adjusted without notice. List updated every 90 minutes. Do not crawl #
-# too much at the risk of being blocked.                                             #
-# Many Phishing websites are legitimate websites that have been hacked, so keep that #
-# in mind before blocking everything. Feed is provided as is, without any warrant.   #
-# CSV: Date,Score,URL,IP                                                             #
-######################################################################################`
+const MOCK_DATA_FILE = "phishstats_sourcefile.csv"
 
-func TestReadData(t *testing.T) {
+func ReadDataFromMockFile() (string, error) {
 
-	res, error := ReadData()
-	require.Nil(t, error)
-	require.NotNil(t, res)
-	require.True(t, strings.HasPrefix(res, phishStatsPrefix))
+	file, err := os.Open(MOCK_DATA_FILE)
+	if err != nil {
+		log.Panicf("failed reading file: %s", err)
+	}
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+
+	dataString := string(data)
+
+	return dataString, err
+}
+
+func TestGetBulkRequests(t *testing.T) {
+
+	stringData, dataErr := ReadDataFromMockFile()
+	if dataErr != nil {
+		panic(dataErr)
+	}
+
+	requests := GetBulkRequests(stringData)
+
+	totalRequests := 0
+
+	for _, elem := range requests {
+
+		totalRequests = totalRequests + len(elem.Indicators)
+
+	}
+
+	require.Equal(t, len(requests), 429)
+	require.Equal(t, totalRequests, 42838)
 
 }
