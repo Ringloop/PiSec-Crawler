@@ -1,0 +1,40 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: docker login
+      env:
+        DOCKER_USER: ${{secrets.DOCKERHUB_USERNAME}}
+        DOCKER_PASSWORD: ${{secrets.DOCKERHUB_PWD}}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
+   
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ringloop/pisec-crawler:$GITHUB_SHA
+      
+    - name: Docker Push
+      run: docker push ringloop/pisec-crawler:$GITHUB_SHA
+      
+    - name: Deploy
+      uses: appleboy/ssh-action@v0.1.4
+      env:
+        COMMIT_ID: ${{ github.sha }}
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        password: ${{ secrets.PASSWORD }}
+        port: 22
+        envs: COMMIT_ID
+        script: cd pisec && ./deploy-crawler.sh $COMMIT_ID
