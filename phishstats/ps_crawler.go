@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
-const SERVERURL = "http://164.68.107.9:8080/api/v1/indicator/url"
+const URL_ENDPOINT = "/api/v1/indicator/url"
+
+var SERVER_ADDRESS = os.Getenv("PISEC_BRAIN_ADDR")
 
 func GetBulkRequests(stringData string) []source.UrlsBulkRequest {
 
@@ -32,7 +35,8 @@ func getJsonFromRequest(bRequest source.UrlsBulkRequest) []byte {
 }
 
 func getHttpRequest(jsonPs []byte) *http.Request {
-	request, error := http.NewRequest("POST", SERVERURL, bytes.NewBuffer(jsonPs))
+	serverUrl := SERVER_ADDRESS + URL_ENDPOINT
+	request, error := http.NewRequest("POST", serverUrl, bytes.NewBuffer(jsonPs))
 	if error != nil {
 		panic(error)
 	}
