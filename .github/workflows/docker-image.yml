@@ -26,15 +26,3 @@ jobs:
       
     - name: Docker Push
       run: docker push ringloop/pisec-crawler:$GITHUB_SHA
-      
-    - name: Deploy
-      uses: appleboy/ssh-action@v0.1.4
-      env:
-        COMMIT_ID: ${{ github.sha }}
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        password: ${{ secrets.PASSWORD }}
-        port: 22
-        envs: COMMIT_ID
-        script: cd pisec && ./deploy-crawler.sh $COMMIT_ID
